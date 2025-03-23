@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Windows;
 using System.Windows.Forms;
+using CoreView.App.Icons;
 using CoreView.Core.Interfaces;
 using Application = System.Windows.Application;
 
@@ -13,27 +14,18 @@ public class TrayIconService : IDisposable
 {
     private readonly NotifyIcon _notifyIcon;
     private readonly ITemperatureService _temperatureService;
-    private readonly Icon[] _temperatureIcons;
+    private bool _disposed;
     private Window? _popupWindow;
     private bool _isPopupVisible;
-    private bool _disposed;
 
     public TrayIconService(ITemperatureService temperatureService)
     {
         _temperatureService = temperatureService;
         
-        // Create temperature icon variations (we'll reuse a simple icon for this example)
-        _temperatureIcons = new[]
-        {
-            SystemIcons.Information, // Cold
-            SystemIcons.Information, // Normal
-            SystemIcons.Warning      // Hot
-        };
-
-        // Initialize NotifyIcon
+        // Initialize NotifyIcon with a default icon
         _notifyIcon = new NotifyIcon
         {
-            Icon = _temperatureIcons[1],
+            Icon = TemperatureIconGenerator.CreateTrayIcon("--°"),
             Text = "CoreView CPU Monitor",
             Visible = true
         };
@@ -57,8 +49,8 @@ public class TrayIconService : IDisposable
         Application.Current.Dispatcher.Invoke(() =>
         {
             var temp = e.Temperature;
-            var iconIndex = temp < 50 ? 0 : (temp < 75 ? 1 : 2);
-            _notifyIcon.Icon = _temperatureIcons[iconIndex];
+            var iconText = $"{temp:F0}°";
+            _notifyIcon.Icon = TemperatureIconGenerator.CreateTrayIcon(iconText);
             _notifyIcon.Text = $"CPU Temperature: {temp:F1}°C";
         });
     }

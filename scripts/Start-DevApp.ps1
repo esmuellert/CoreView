@@ -3,16 +3,19 @@ $ErrorActionPreference = 'Stop'
 
 Write-Host "Building CoreView.App..."
 
+# Get the repository root directory (parent of scripts folder)
+$repoRoot = Split-Path $PSScriptRoot -Parent
+$buildPath = Join-Path $repoRoot "build"
+
 # Ensure build directory exists and is empty
-$buildPath = Join-Path $PSScriptRoot "build"
 if (Test-Path $buildPath) {
     Remove-Item -Path $buildPath -Recurse -Force
 }
 New-Item -ItemType Directory -Path $buildPath | Out-Null
 
 try {
-    # Publish the application
-    $publishResult = dotnet publish (Join-Path $PSScriptRoot "CoreView.App") `
+    # Publish the application from repository root
+    $publishResult = dotnet publish (Join-Path $repoRoot "CoreView.App") `
         --configuration Debug `
         --runtime win-x64 `
         --output $buildPath `
