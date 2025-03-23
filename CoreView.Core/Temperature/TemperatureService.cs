@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Security.Principal;
 using CoreView.Core.Interfaces;
 using CoreView.Core.Models;
 using LibreHardwareMonitor.Hardware;
@@ -18,6 +19,8 @@ public class TemperatureService : ITemperatureService, IDisposable
     private readonly object _lockObject = new();
     private bool _disposed;
     private float _currentTemperature;
+    private bool _isInitialized;
+    private string _lastError = string.Empty;
 
     public event EventHandler<TemperatureChangedEventArgs>? TemperatureChanged;
 
@@ -25,18 +28,39 @@ public class TemperatureService : ITemperatureService, IDisposable
     {
         _temperatureHistory = new ConcurrentQueue<TemperatureReading>();
         _updateVisitor = new UpdateVisitor();
-        _computer = new Computer
-        {
-            IsCpuEnabled = true,
-            IsGpuEnabled = false,
-            IsMemoryEnabled = false,
-            IsMotherboardEnabled = false,
-            IsControllerEnabled = false,
-            IsNetworkEnabled = false,
-            IsStorageEnabled = false
-        };
         
-        _computer.Open();
+        try
+        {
+            // Check if running with admin privileges
+            using var identity = WindowsIdentity.GetCurrent();
+            var principal = new WindowsPrincipal(identity);
+            var hasAdminRights = principal.IsInRole(WindowsBuiltInRole.Administrator);
+
+            if (!hasAdminRights)
+            {
+                Debug.WriteLine("Warning: Application is not running with administrator privileges. Temperature readings may be inaccurate or unavailable.");
+            }
+
+            _computer = new Computer
+            {
+                IsCpuEnabled = true,
+                IsGpuEnabled = false,
+                IsMemoryEnabled = false,
+                IsMotherboardEnabled = true, // Enable motherboard to get more temperature sensors
+                IsControllerEnabled = false,
+                IsNetworkEnabled = false,
+                IsStorageEnabled = false
+            };
+            
+            _computer.Open();
+            _isInitialized = true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error initializing hardware monitoring: {ex.Message}");
+            _lastError = ex.Message;
+            _computer = new Computer(); // Create empty instance to prevent null reference
+        }
         
         // Start a timer to update temperature values every 2 seconds
         _updateTimer = new Timer(UpdateTemperature, null, TimeSpan.Zero, TimeSpan.FromSeconds(2));
@@ -47,51 +71,109 @@ public class TemperatureService : ITemperatureService, IDisposable
     /// </summary>
     private void UpdateTemperature(object? state)
     {
+        if (!_isInitialized || _disposed) return;
+
         lock (_lockObject)
         {
-            if (_disposed) return;
-
-            // Use the visitor to update all hardware
-            _computer.Accept(_updateVisitor);
-
-            var cpuTemp = 0f;
-            var cpuTempSensors = 0;
-
-            // Collect temperature values from all CPU cores
-            foreach (var hardware in _computer.Hardware)
+            try
             {
-                foreach (var sensor in hardware.Sensors)
+                // Use the visitor to update all hardware
+                _computer.Accept(_updateVisitor);
+
+                var cpuTemp = 0f;
+                var cpuTempSensors = 0;
+                var foundAnySensors = false;
+
+                // First try CPU package temperature
+                foreach (var hardware in _computer.Hardware)
                 {
-                    if (sensor.SensorType == SensorType.Temperature && sensor.Value.HasValue)
+                    // Try to get CPU package temperature first
+                    if (hardware.HardwareType == HardwareType.Cpu)
                     {
-                        cpuTemp += sensor.Value.Value;
-                        cpuTempSensors++;
+                        foreach (var sensor in hardware.Sensors)
+                        {
+                            if (sensor.SensorType == SensorType.Temperature && 
+                                sensor.Name.Contains("Package", StringComparison.OrdinalIgnoreCase) &&
+                                sensor.Value.HasValue)
+                            {
+                                cpuTemp = sensor.Value.Value;
+                                cpuTempSensors = 1;
+                                foundAnySensors = true;
+                                break;
+                            }
+                        }
+                        
+                        // If no package temperature, try individual cores
+                        if (!foundAnySensors)
+                        {
+                            foreach (var sensor in hardware.Sensors)
+                            {
+                                if (sensor.SensorType == SensorType.Temperature && sensor.Value.HasValue)
+                                {
+                                    cpuTemp += sensor.Value.Value;
+                                    cpuTempSensors++;
+                                    foundAnySensors = true;
+                                }
+                            }
+                        }
                     }
+                }
+
+                // If no CPU sensors found, try motherboard CPU sensor as fallback
+                if (!foundAnySensors)
+                {
+                    foreach (var hardware in _computer.Hardware)
+                    {
+                        if (hardware.HardwareType == HardwareType.Motherboard)
+                        {
+                            foreach (var sensor in hardware.Sensors)
+                            {
+                                if (sensor.SensorType == SensorType.Temperature && 
+                                    sensor.Name.Contains("CPU", StringComparison.OrdinalIgnoreCase) &&
+                                    sensor.Value.HasValue)
+                                {
+                                    cpuTemp = sensor.Value.Value;
+                                    cpuTempSensors = 1;
+                                    foundAnySensors = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Calculate average temperature if any sensors were found
+                if (cpuTempSensors > 0)
+                {
+                    var avgTemp = cpuTemp / cpuTempSensors;
+                    
+                    // Update current temperature and add to history
+                    if (Math.Abs(_currentTemperature - avgTemp) > 0.1f)
+                    {
+                        _currentTemperature = avgTemp;
+                        var reading = new TemperatureReading(_currentTemperature, DateTime.Now);
+                        _temperatureHistory.Enqueue(reading);
+                        
+                        // Trim history to keep about 10 minutes of readings
+                        while (_temperatureHistory.Count > 300)
+                        {
+                            _temperatureHistory.TryDequeue(out _);
+                        }
+                        
+                        // Notify subscribers about temperature change
+                        TemperatureChanged?.Invoke(this, 
+                            new TemperatureChangedEventArgs(_currentTemperature, DateTime.Now));
+                    }
+                }
+                else
+                {
+                    Debug.WriteLine("No temperature sensors found or accessible");
                 }
             }
-
-            // Calculate average temperature
-            if (cpuTempSensors > 0)
+            catch (Exception ex)
             {
-                var avgTemp = cpuTemp / cpuTempSensors;
-                
-                // Update current temperature and add to history
-                if (Math.Abs(_currentTemperature - avgTemp) > 0.1f)
-                {
-                    _currentTemperature = avgTemp;
-                    var reading = new TemperatureReading(_currentTemperature, DateTime.Now);
-                    _temperatureHistory.Enqueue(reading);
-                    
-                    // Trim history to keep about 10 minutes of readings (300 readings at 2-second intervals)
-                    while (_temperatureHistory.Count > 300)
-                    {
-                        _temperatureHistory.TryDequeue(out _);
-                    }
-                    
-                    // Notify subscribers about temperature change
-                    TemperatureChanged?.Invoke(this, 
-                        new TemperatureChangedEventArgs(_currentTemperature, DateTime.Now));
-                }
+                Debug.WriteLine($"Error updating temperature: {ex.Message}");
+                _lastError = ex.Message;
             }
         }
     }
