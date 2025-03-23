@@ -9,14 +9,14 @@ namespace CoreView.App.Icons;
 public static class TemperatureIconGenerator
 {
     // Internal size for high-quality rendering before downscaling
-    private const int InternalSize = 64;
+    private const int InternalSize = 256;
     
     // Modern Windows blue color for background
     private static readonly SKColor BackgroundColor = new(0, 120, 215);
     
     // Background rectangle dimensions
-    private const float RectPadding = InternalSize * 0.1f; // 10% padding from edges
-    private const float CornerRadius = InternalSize * 0.15f; // ~10px at 64px size
+    private const float RectPadding = InternalSize * 0.06f; // 6% padding from edges
+    private const float CornerRadius = InternalSize * 0.12f; // Scale corner radius with internal size
     
     // High-quality sampling configuration for text and image scaling
     private static readonly SKSamplingOptions SamplingOptions = new(
@@ -27,9 +27,9 @@ public static class TemperatureIconGenerator
     /// Creates a high-quality tray icon with the given temperature text centered in it
     /// </summary>
     /// <param name="temperatureText">The temperature text to display (e.g., "54°")</param>
-    /// <param name="size">Target size of the icon in pixels (default 32x32)</param>
+    /// <param name="size">Target size of the icon in pixels (default 40x40)</param>
     /// <returns>A system icon suitable for use in the Windows system tray</returns>
-    public static Icon CreateTrayIcon(string temperatureText, int size = 32)
+    public static Icon CreateTrayIcon(string temperatureText, int size = 40)
     {
         // Create high-resolution bitmap for quality downscaling
         using var bitmap = new SKBitmap(InternalSize, InternalSize);
@@ -58,8 +58,8 @@ public static class TemperatureIconGenerator
         using var typeface = SKTypeface.FromFamilyName("Segoe UI Variable Display", SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright)
                             ?? SKTypeface.FromFamilyName("Segoe UI", SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright);
         
-        // Calculate initial font size based on rectangle height
-        var maxHeight = rect.Height * 0.9f; // 90% of rectangle height
+        // Calculate initial font size based on rectangle height (75% of height)
+        var maxHeight = rect.Height * 0.75f;
         var fontSize = maxHeight;
         using var font = new SKFont(typeface, fontSize)
         {
@@ -75,7 +75,7 @@ public static class TemperatureIconGenerator
         
         // Scale font to fit within rectangle while maintaining aspect ratio
         var heightScale = maxHeight / textHeight;
-        var widthScale = (rect.Width * 0.9f) / textWidth;
+        var widthScale = rect.Width * 0.95f / textWidth; // Allow text to use more width
         var scale = Math.Min(heightScale, widthScale);
         font.Size *= scale;
 
@@ -94,7 +94,7 @@ public static class TemperatureIconGenerator
         // Draw text shadow/outline for contrast
         textPaint.Style = SKPaintStyle.Stroke;
         textPaint.Color = new SKColor(0, 0, 0, 160);
-        textPaint.StrokeWidth = InternalSize * 0.04f;
+        textPaint.StrokeWidth = InternalSize * 0.02f; // Thinner outline at higher resolution
         canvas.DrawText(temperatureText, xPos, yPos, font, textPaint);
 
         // Draw main text in white
