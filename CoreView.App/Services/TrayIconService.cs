@@ -49,7 +49,7 @@ public class TrayIconService : IDisposable
         Application.Current.Dispatcher.Invoke(() =>
         {
             var temp = e.Temperature;
-            var iconText = $"{temp:F0}°";
+            var iconText = $"{temp:F0}";
             _notifyIcon.Icon = TemperatureIconGenerator.CreateTrayIcon(iconText);
             _notifyIcon.Text = $"CPU Temperature: {temp:F1}°C";
         });

@@ -11,12 +11,8 @@ public static class TemperatureIconGenerator
     // Internal size for high-quality rendering before downscaling
     private const int InternalSize = 256;
     
-    // Modern Windows blue color for background
-    private static readonly SKColor BackgroundColor = new(0, 120, 215);
-    
-    // Background rectangle dimensions
-    private const float RectPadding = InternalSize * 0.06f; // 6% padding from edges
-    private const float CornerRadius = InternalSize * 0.12f; // Scale corner radius with internal size
+    // Text positioning adjustment to compensate for Windows tray padding
+    private const float VerticalOffset = InternalSize * -0.04f;
     
     // High-quality sampling configuration for text and image scaling
     private static readonly SKSamplingOptions SamplingOptions = new(
@@ -36,71 +32,46 @@ public static class TemperatureIconGenerator
         using var canvas = new SKCanvas(bitmap);
         canvas.Clear(SKColors.Transparent);
 
-        // Draw rounded rectangle background
-        var rect = new SKRect(
-            RectPadding,
-            RectPadding,
-            InternalSize - RectPadding,
-            InternalSize - RectPadding
-        );
-
-        using (var backgroundPaint = new SKPaint
-        {
-            Color = BackgroundColor,
-            IsAntialias = true,
-            Style = SKPaintStyle.Fill
-        })
-        {
-            canvas.DrawRoundRect(rect, CornerRadius, CornerRadius, backgroundPaint);
-        }
-
-        // Set up font with modern Windows typeface
-        using var typeface = SKTypeface.FromFamilyName("Segoe UI Variable Display", SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright)
-                            ?? SKTypeface.FromFamilyName("Segoe UI", SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright);
+        // Set up font with modern Windows typeface in regular weight
+        using var typeface = SKTypeface.FromFamilyName("Segoe UI Variable", SKFontStyleWeight.SemiBold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright)
+                            ?? SKTypeface.FromFamilyName("Segoe UI", SKFontStyleWeight.SemiBold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright);
         
-        // Calculate initial font size based on rectangle height (75% of height)
-        var maxHeight = rect.Height * 0.75f;
-        var fontSize = maxHeight;
+        // Calculate initial font size to fill entire icon
+        var fontSize = InternalSize; // Start with 90% of icon size
         using var font = new SKFont(typeface, fontSize)
         {
             Subpixel = true,
             Edging = SKFontEdging.SubpixelAntialias
         };
 
-        // Measure and adjust font size to fit both width and height
-        using var tempPaint = new SKPaint { IsAntialias = true };
+        // Measure and adjust font size to fit width and height
+        using var paint = new SKPaint 
+        { 
+            IsAntialias = true,
+            Color = SKColors.Black
+        };
+
         var metrics = font.Metrics;
         var textHeight = metrics.Descent - metrics.Ascent;
-        var textWidth = font.MeasureText(temperatureText, tempPaint);
+        var textWidth = font.MeasureText(temperatureText, paint);
         
-        // Scale font to fit within rectangle while maintaining aspect ratio
-        var heightScale = maxHeight / textHeight;
-        var widthScale = rect.Width * 0.95f / textWidth; // Allow text to use more width
-        var scale = Math.Min(heightScale, widthScale);
+        // Scale font to fit within icon bounds while maintaining aspect ratio
+        var heightScale = InternalSize / textHeight;
+        var widthScale = InternalSize / textWidth;
+        var scale = Math.Min(heightScale, widthScale) * 0.98f; // 98% to ensure no edge clipping
         font.Size *= scale;
 
         // Recalculate metrics with final font size
         metrics = font.Metrics;
         textHeight = metrics.Descent - metrics.Ascent;
         
-        // Set up paint for text rendering
-        using var textPaint = new SKPaint { IsAntialias = true };
-        
-        // Calculate final text position for perfect centering
-        var finalWidth = font.MeasureText(temperatureText, textPaint);
+        // Calculate final text position for perfect centering with vertical offset
+        var finalWidth = font.MeasureText(temperatureText, paint);
         var xPos = (InternalSize - finalWidth) / 2;
-        var yPos = (InternalSize + textHeight) / 2 - metrics.Descent;
+        var yPos = (InternalSize + textHeight) / 2 - metrics.Descent + VerticalOffset;
 
-        // Draw text shadow/outline for contrast
-        textPaint.Style = SKPaintStyle.Stroke;
-        textPaint.Color = new SKColor(0, 0, 0, 160);
-        textPaint.StrokeWidth = InternalSize * 0.02f; // Thinner outline at higher resolution
-        canvas.DrawText(temperatureText, xPos, yPos, font, textPaint);
-
-        // Draw main text in white
-        textPaint.Style = SKPaintStyle.Fill;
-        textPaint.Color = SKColors.White;
-        canvas.DrawText(temperatureText, xPos, yPos, font, textPaint);
+        // Draw text in solid black
+        canvas.DrawText(temperatureText, xPos, yPos, font, paint);
 
         // Scale down to target size with high-quality interpolation
         using var scaledBitmap = bitmap.Resize(new SKSizeI(size, size), SamplingOptions);
