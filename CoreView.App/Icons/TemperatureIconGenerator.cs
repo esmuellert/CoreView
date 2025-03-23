@@ -1,109 +1,116 @@
+using System.Drawing;
 using SkiaSharp;
-using System.Drawing.Imaging;
 
-namespace CoreView.App.Icons
+namespace CoreView.App.Icons;
+
+/// <summary>
+/// Generates high-quality system tray icons displaying temperature values as text
+/// </summary>
+public static class TemperatureIconGenerator
 {
-    public static class TemperatureIconGenerator
+    // Internal size for high-quality rendering before downscaling
+    private const int InternalSize = 64;
+    
+    // Modern Windows blue color for background
+    private static readonly SKColor BackgroundColor = new(0, 120, 215);
+    
+    // Background rectangle dimensions
+    private const float RectPadding = InternalSize * 0.1f; // 10% padding from edges
+    private const float CornerRadius = InternalSize * 0.15f; // ~10px at 64px size
+    
+    // High-quality sampling configuration for text and image scaling
+    private static readonly SKSamplingOptions SamplingOptions = new(
+        SKFilterMode.Linear,
+        SKMipmapMode.Linear);
+    
+    /// <summary>
+    /// Creates a high-quality tray icon with the given temperature text centered in it
+    /// </summary>
+    /// <param name="temperatureText">The temperature text to display (e.g., "54°")</param>
+    /// <param name="size">Target size of the icon in pixels (default 32x32)</param>
+    /// <returns>A system icon suitable for use in the Windows system tray</returns>
+    public static Icon CreateTrayIcon(string temperatureText, int size = 32)
     {
-        // 提高内部渲染尺寸，保证缩放后依然清晰
-        private const int InternalSize = 128;
-        private const float CircleRadius = InternalSize * 0.48f;
+        // Create high-resolution bitmap for quality downscaling
+        using var bitmap = new SKBitmap(InternalSize, InternalSize);
+        using var canvas = new SKCanvas(bitmap);
+        canvas.Clear(SKColors.Transparent);
 
-        private static readonly SKSamplingOptions SamplingOptions = new(
-            SKFilterMode.Linear,
-            SKMipmapMode.Linear);
+        // Draw rounded rectangle background
+        var rect = new SKRect(
+            RectPadding,
+            RectPadding,
+            InternalSize - RectPadding,
+            InternalSize - RectPadding
+        );
 
-        /// <summary>
-        /// 生成高清托盘图标
-        /// </summary>
-        /// <param name="temperatureText">例如 "54°"</param>
-        /// <param name="finalSize">图标最终尺寸，托盘通常16~24，可用32或40确保更清晰</param>
-        /// <returns>可直接赋值给 NotifyIcon.Icon 的 Icon 对象</returns>
-        public static Icon CreateTrayIcon(string temperatureText, int finalSize = 32)
+        using (var backgroundPaint = new SKPaint
         {
-            // 1. 创建高分辨率位图
-            using var bitmap = new SKBitmap(InternalSize, InternalSize);
-            using var canvas = new SKCanvas(bitmap);
-            canvas.Clear(SKColors.Transparent);
-
-            // 2. 可选：绘制半透明背景圆
-            using (var backgroundPaint = new SKPaint
-            {
-                Color = new SKColor(0, 0, 0, 50),
-                IsAntialias = true,
-                Style = SKPaintStyle.Fill
-            })
-            {
-                canvas.DrawCircle(InternalSize / 2f, InternalSize / 2f, CircleRadius, backgroundPaint);
-            }
-
-            // 3. 构造 SKFontStyle
-            var boldStyle = new SKFontStyle(
-                SKFontStyleWeight.Bold,
-                SKFontStyleWidth.Normal,
-                SKFontStyleSlant.Upright
-            );
-
-            // 4. 尝试用 "Segoe UI Variable Display"；若失败则回退到 "Segoe UI"
-            using var typeface = SKTypeface.FromFamilyName("Segoe UI Variable Display", boldStyle)
-                ?? SKTypeface.FromFamilyName("Segoe UI", boldStyle);
-
-            // 字体尽量大，让文字几乎填满图标
-            using var font = new SKFont(typeface, InternalSize * 0.55f)
-            {
-                Subpixel = true,
-                Edging = SKFontEdging.SubpixelAntialias
-            };
-
-            using var textPaint = new SKPaint
-            {
-                IsAntialias = true
-            };
-
-            // 5. 计算文字的宽高，用于居中
-            var textWidth = font.MeasureText(temperatureText, textPaint);
-            var metrics = font.Metrics;
-            var textHeight = metrics.Descent - metrics.Ascent;
-            var xPos = (InternalSize - textWidth) / 2f;
-            var yPos = (InternalSize - textHeight) / 2f - metrics.Ascent;
-
-            // 6. 先画描边(阴影)
-            textPaint.Style = SKPaintStyle.Stroke;
-            textPaint.Color = new SKColor(0, 0, 0, 200);
-            textPaint.StrokeWidth = InternalSize * 0.05f;
-            canvas.DrawText(temperatureText, xPos, yPos, font, textPaint);
-
-            // 7. 再画主文字
-            textPaint.Style = SKPaintStyle.Fill;
-            textPaint.Color = SKColors.White;
-            canvas.DrawText(temperatureText, xPos, yPos, font, textPaint);
-
-            // 8. 缩放到目标尺寸
-            using var scaledBitmap = bitmap.Resize(new SKSizeI(finalSize, finalSize), SamplingOptions);
-            using var pixmap = scaledBitmap.PeekPixels();
-
-            // 9. 转为 GDI+ Bitmap
-            using var gdiImage = new Bitmap(finalSize, finalSize, PixelFormat.Format32bppArgb);
-            var data = gdiImage.LockBits(
-                new Rectangle(0, 0, finalSize, finalSize),
-                ImageLockMode.WriteOnly,
-                PixelFormat.Format32bppArgb
-            );
-
-            // 需要 (dstInfo, dstPixels, dstRowBytes, srcX, srcY)
-            pixmap.ReadPixels(
-                new SKImageInfo(scaledBitmap.Width, scaledBitmap.Height),
-                data.Scan0,
-                scaledBitmap.Width * 4,
-                0,
-                0
-            );
-
-            gdiImage.UnlockBits(data);
-
-            // 10. 转为 Icon
-            var iconHandle = gdiImage.GetHicon();
-            return Icon.FromHandle(iconHandle);
+            Color = BackgroundColor,
+            IsAntialias = true,
+            Style = SKPaintStyle.Fill
+        })
+        {
+            canvas.DrawRoundRect(rect, CornerRadius, CornerRadius, backgroundPaint);
         }
+
+        // Set up font with modern Windows typeface
+        using var typeface = SKTypeface.FromFamilyName("Segoe UI Variable Display", SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright)
+                            ?? SKTypeface.FromFamilyName("Segoe UI", SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright);
+        
+        // Calculate initial font size based on rectangle height
+        var maxHeight = rect.Height * 0.9f; // 90% of rectangle height
+        var fontSize = maxHeight;
+        using var font = new SKFont(typeface, fontSize)
+        {
+            Subpixel = true,
+            Edging = SKFontEdging.SubpixelAntialias
+        };
+
+        // Measure and adjust font size to fit both width and height
+        using var tempPaint = new SKPaint { IsAntialias = true };
+        var metrics = font.Metrics;
+        var textHeight = metrics.Descent - metrics.Ascent;
+        var textWidth = font.MeasureText(temperatureText, tempPaint);
+        
+        // Scale font to fit within rectangle while maintaining aspect ratio
+        var heightScale = maxHeight / textHeight;
+        var widthScale = (rect.Width * 0.9f) / textWidth;
+        var scale = Math.Min(heightScale, widthScale);
+        font.Size *= scale;
+
+        // Recalculate metrics with final font size
+        metrics = font.Metrics;
+        textHeight = metrics.Descent - metrics.Ascent;
+        
+        // Set up paint for text rendering
+        using var textPaint = new SKPaint { IsAntialias = true };
+        
+        // Calculate final text position for perfect centering
+        var finalWidth = font.MeasureText(temperatureText, textPaint);
+        var xPos = (InternalSize - finalWidth) / 2;
+        var yPos = (InternalSize + textHeight) / 2 - metrics.Descent;
+
+        // Draw text shadow/outline for contrast
+        textPaint.Style = SKPaintStyle.Stroke;
+        textPaint.Color = new SKColor(0, 0, 0, 160);
+        textPaint.StrokeWidth = InternalSize * 0.04f;
+        canvas.DrawText(temperatureText, xPos, yPos, font, textPaint);
+
+        // Draw main text in white
+        textPaint.Style = SKPaintStyle.Fill;
+        textPaint.Color = SKColors.White;
+        canvas.DrawText(temperatureText, xPos, yPos, font, textPaint);
+
+        // Scale down to target size with high-quality interpolation
+        using var scaledBitmap = bitmap.Resize(new SKSizeI(size, size), SamplingOptions);
+        using var pixmap = new SKPixmap(new SKImageInfo(size, size), scaledBitmap.GetPixels());
+        using var gdiImage = new Bitmap(size, size, size * 4, 
+            System.Drawing.Imaging.PixelFormat.Format32bppArgb, 
+            pixmap.GetPixels());
+
+        // Create and return the system tray icon
+        var iconHandle = gdiImage.GetHicon();
+        return Icon.FromHandle(iconHandle);
     }
 }
