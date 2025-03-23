@@ -3,10 +3,131 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="clr-namespace:CoreView.App.Views"
         xmlns:local="clr-namespace:CoreView.App"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Name="PopupWindow"
+        Title="CPU Temperature Monitor" 
+        Height="450" Width="400"
+        WindowStyle="None" 
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        Background="#F5F5F5"
+        BorderBrush="DarkGray"
+        BorderThickness="1">
+    
     <Grid>
-
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#2E75B6" Padding="10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="CPU Temperature Monitor" 
+                               Foreground="White" 
+                               FontSize="16" 
+                               FontWeight="Bold"/>
+                    <TextBlock Foreground="White" Margin="0,5,0,0">
+                        <Run Text="Current: "/>
+                        <Run Text="{Binding CurrentTemperature, StringFormat='{}{0:F1}°C'}"/>
+                        <Run Text=" | Last updated: "/>
+                        <Run Text="{Binding LastUpdated, StringFormat='{}{0:HH:mm:ss}'}"/>
+                    </TextBlock>
+                </StackPanel>
+                
+                <Button Grid.Column="1" 
+                        Content="×" 
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Foreground="White"
+                        FontSize="20"
+                        VerticalAlignment="Top"
+                        HorizontalAlignment="Right"
+                        Padding="5,0"
+                        Click="CloseButton_Click"/>
+            </Grid>
+        </Border>
+        
+        <!-- Temperature Chart -->
+        <Border Grid.Row="1" 
+                Background="White" 
+                BorderBrush="LightGray" 
+                BorderThickness="0,0,0,1" 
+                Padding="10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <TextBlock Grid.Row="0" 
+                           Text="Temperature History" 
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,5"/>
+                
+                <views:TemperatureChartView Grid.Row="1"/>
+            </Grid>
+        </Border>
+        
+        <!-- Processes Header -->
+        <Border Grid.Row="2" 
+                Background="#E6E6E6" 
+                BorderBrush="LightGray" 
+                BorderThickness="0,0,0,1" 
+                Padding="10,5">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Grid.Column="0" 
+                           Text="Top Processes" 
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+                
+                <Button Grid.Column="1" 
+                        Content="Refresh" 
+                        Padding="8,3"
+                        Command="{Binding RefreshDataCommand}"/>
+            </Grid>
+        </Border>
+        
+        <!-- Process List -->
+        <Border Grid.Row="3" Background="White" Padding="10">
+            <ListView ItemsSource="{Binding TopProcesses}" 
+                      BorderThickness="0"
+                      Background="Transparent">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Process" 
+                                        DisplayMemberBinding="{Binding Name}" 
+                                        Width="160"/>
+                        <GridViewColumn Header="ID" 
+                                        DisplayMemberBinding="{Binding Id}" 
+                                        Width="60"/>
+                        <GridViewColumn Header="Memory (MB)" 
+                                        DisplayMemberBinding="{Binding MemoryUsageMB, StringFormat='{}{0:F1}'}" 
+                                        Width="100"/>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+        </Border>
+        
+        <!-- Allow dragging the window -->
+        <Rectangle Grid.Row="0"
+                   Fill="Transparent"
+                   MouseDown="Window_MouseDown"/>
     </Grid>
 </Window>
