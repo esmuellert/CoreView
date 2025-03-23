@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.Security.Principal;
 using CoreView.Core.Interfaces;
 using CoreView.Core.Models;
@@ -10,6 +11,7 @@ namespace CoreView.Core.Temperature;
 /// <summary>
 /// Service for monitoring and retrieving CPU temperature data
 /// </summary>
+[SupportedOSPlatform("windows")]
 public class TemperatureService : ITemperatureService, IDisposable
 {
     private readonly Computer _computer;
@@ -24,6 +26,7 @@ public class TemperatureService : ITemperatureService, IDisposable
 
     public event EventHandler<TemperatureChangedEventArgs>? TemperatureChanged;
 
+    [SupportedOSPlatform("windows")]
     public TemperatureService()
     {
         _temperatureHistory = new ConcurrentQueue<TemperatureReading>();
