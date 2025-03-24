@@ -1,11 +1,7 @@
-﻿using System.Configuration;
-using System.Data;
-using System.Windows;
+﻿using System.Windows;
 using CoreView.App.Services;
 using CoreView.App.ViewModels;
-using CoreView.Core.Interfaces;
 using CoreView.Core.Temperature;
-using WinFormsApplication = System.Windows.Forms.Application;
 
 namespace CoreView.App;
 

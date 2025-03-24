@@ -1,6 +1,4 @@
-using System.Drawing;
 using System.Windows;
-using System.Windows.Forms;
 using CoreView.App.Icons;
 using CoreView.Core.Interfaces;
 using Application = System.Windows.Application;
@@ -21,7 +19,7 @@ public class TrayIconService : IDisposable
     public TrayIconService(ITemperatureService temperatureService)
     {
         _temperatureService = temperatureService;
-        
+
         // Initialize NotifyIcon with a default icon
         _notifyIcon = new NotifyIcon
         {
@@ -63,7 +61,7 @@ public class TrayIconService : IDisposable
         // Only respond to left click
         if (e is MouseEventArgs mouseEvent && mouseEvent.Button != MouseButtons.Left)
             return;
-        
+
         TogglePopupVisibility();
     }
 
@@ -82,7 +80,7 @@ public class TrayIconService : IDisposable
     private void TogglePopupVisibility()
     {
         if (_disposed) return;
-        
+
         if (_isPopupVisible)
         {
             _popupWindow?.Hide();
@@ -93,17 +91,25 @@ public class TrayIconService : IDisposable
             if (_popupWindow == null)
             {
                 _popupWindow = GetPopupWindow();
+                _popupWindow.SourceInitialized += (s, e) => SetPopupWindowToBottomRight();
             }
-
-            // Position window near the tray icon
-            var cursorPos = System.Windows.Forms.Cursor.Position;
-            _popupWindow.Left = cursorPos.X - _popupWindow.Width / 2;
-            _popupWindow.Top = cursorPos.Y - _popupWindow.Height;
 
             _popupWindow.Show();
             _popupWindow.Activate();
             _isPopupVisible = true;
         }
+    }
+
+    private void SetPopupWindowToBottomRight()
+    {
+        if (_popupWindow == null) return;
+
+        // Calculate taskbar height
+        var taskbarHeight = SystemParameters.PrimaryScreenHeight - SystemParameters.FullPrimaryScreenHeight - SystemParameters.WindowCaptionHeight;
+
+        // Position window in the bottom right corner, right above the taskbar
+        _popupWindow.Left = SystemParameters.PrimaryScreenWidth - _popupWindow.ActualWidth;
+        _popupWindow.Top = SystemParameters.PrimaryScreenHeight - _popupWindow.ActualHeight - taskbarHeight;
     }
 
     /// <summary>
@@ -117,12 +123,12 @@ public class TrayIconService : IDisposable
         {
             return window;
         }
-        
+
         // As a fallback, create a new window
-        return new Window 
-        { 
-            Width = 400, 
-            Height = 300, 
+        return new Window
+        {
+            Width = 400,
+            Height = 300,
             WindowStyle = WindowStyle.ToolWindow,  // Changed to ToolWindow to show close button
             ResizeMode = ResizeMode.NoResize,
             ShowInTaskbar = false,
@@ -143,12 +149,12 @@ public class TrayIconService : IDisposable
     public void Dispose()
     {
         if (_disposed) return;
-        
+
         _disposed = true;
         _temperatureService.TemperatureChanged -= OnTemperatureChanged;
         _notifyIcon.Click -= OnNotifyIconClick;
         _notifyIcon.Dispose();
-        
+
         GC.SuppressFinalize(this);
     }
 
