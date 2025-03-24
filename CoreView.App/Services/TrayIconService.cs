@@ -14,7 +14,6 @@ public class TrayIconService : IDisposable
     private readonly ITemperatureService _temperatureService;
     private bool _disposed;
     private Window? _popupWindow;
-    private bool _isPopupVisible;
 
     public TrayIconService(ITemperatureService temperatureService)
     {
@@ -25,11 +24,10 @@ public class TrayIconService : IDisposable
         {
             Icon = TemperatureIconGenerator.CreateTrayIcon("--°"),
             Text = "CoreView CPU Monitor",
-            Visible = true
+            Visible = true,
+            // Set up the context menu
+            ContextMenuStrip = new ContextMenuStrip()
         };
-
-        // Set up the context menu
-        _notifyIcon.ContextMenuStrip = new ContextMenuStrip();
         _notifyIcon.ContextMenuStrip.Items.Add("Show Monitor", null, ShowPopup);
         _notifyIcon.ContextMenuStrip.Items.Add("-"); // Separator
         _notifyIcon.ContextMenuStrip.Items.Add("Exit", null, Exit);
@@ -70,7 +68,7 @@ public class TrayIconService : IDisposable
     /// </summary>
     private void ShowPopup(object? sender, EventArgs e)
     {
-        if (!_isPopupVisible)
+        if (_popupWindow?.IsVisible != true)
             TogglePopupVisibility();
     }
 
@@ -81,10 +79,9 @@ public class TrayIconService : IDisposable
     {
         if (_disposed) return;
 
-        if (_isPopupVisible)
+        if (_popupWindow?.IsVisible == true)
         {
-            _popupWindow?.Hide();
-            _isPopupVisible = false;
+            _popupWindow.Hide();
         }
         else
         {
@@ -96,7 +93,6 @@ public class TrayIconService : IDisposable
 
             _popupWindow.Show();
             _popupWindow.Activate();
-            _isPopupVisible = true;
         }
     }
 
