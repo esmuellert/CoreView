@@ -93,11 +93,6 @@ public class TrayIconService : IDisposable
             if (_popupWindow == null)
             {
                 _popupWindow = GetPopupWindow();
-                _popupWindow.Deactivated += (_, _) =>
-                {
-                    _popupWindow.Hide();
-                    _isPopupVisible = false;
-                };
             }
 
             // Position window near the tray icon
@@ -123,20 +118,18 @@ public class TrayIconService : IDisposable
             return window;
         }
         
-        // As a fallback, look for a window with the name "PopupWindow"
-        return Application.Current.Windows.OfType<Window>()
-            .FirstOrDefault(w => w.Name == "PopupWindow") ?? 
-            new Window 
-            { 
-                Width = 400, 
-                Height = 300, 
-                WindowStyle = WindowStyle.None,
-                ResizeMode = ResizeMode.NoResize,
-                ShowInTaskbar = false,
-                Topmost = true,
-                BorderThickness = new Thickness(1),
-                BorderBrush = System.Windows.Media.Brushes.Gray
-            };
+        // As a fallback, create a new window
+        return new Window 
+        { 
+            Width = 400, 
+            Height = 300, 
+            WindowStyle = WindowStyle.ToolWindow,  // Changed to ToolWindow to show close button
+            ResizeMode = ResizeMode.NoResize,
+            ShowInTaskbar = false,
+            Topmost = true,
+            BorderThickness = new Thickness(1),
+            BorderBrush = System.Windows.Media.Brushes.Gray
+        };
     }
 
     /// <summary>
