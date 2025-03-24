@@ -1,0 +1,76 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/CoreView.sln",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary;ForceNoAlign"
+            ],
+            "problemMatcher": "$msCompile",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "publish",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "publish",
+                "${workspaceFolder}/CoreView.App",
+                "--configuration",
+                "Debug",
+                "--runtime",
+                "win-x64",
+                "--output",
+                "${workspaceFolder}/build",
+                "--no-self-contained"
+            ],
+            "problemMatcher": "$msCompile",
+            "dependsOn": ["clean build directory"]
+        },
+        {
+            "label": "clean build directory",
+            "type": "shell",
+            "command": "if (Test-Path ${workspaceFolder}/build) { Remove-Item -Path ${workspaceFolder}/build -Recurse -Force }; New-Item -ItemType Directory -Path ${workspaceFolder}/build -Force",
+            "problemMatcher": []
+        },
+        {
+            "label": "watch",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "watch",
+                "--project",
+                "${workspaceFolder}/CoreView.App",
+                "--",
+                "publish",
+                "--configuration",
+                "Debug",
+                "--runtime",
+                "win-x64",
+                "--output",
+                "${workspaceFolder}/build",
+                "--no-self-contained"
+            ],
+            "group": "build",
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": "^.*$"
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^dotnet watch ⌚",
+                    "endsPattern": "^dotnet watch ⏳"
+                }
+            }
+        }
+    ]
+}

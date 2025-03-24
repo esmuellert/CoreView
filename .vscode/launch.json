@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "CoreView Debug",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/CoreView.App.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "console": "internalConsole",
+            "preLaunchTask": "publish"
+        },
+        {
+            "name": "CoreView Debug (Watch)",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/CoreView.App.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "console": "internalConsole",
+            "preLaunchTask": "watch"
+        }
+    ]
+}
