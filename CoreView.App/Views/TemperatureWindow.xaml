@@ -1,21 +1,11 @@
-﻿<Window x:Class="CoreView.App.MainWindow"
+<views:BaseMetricWindow x:Class="CoreView.App.Views.TemperatureWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="clr-namespace:CoreView.App.Views"
-        xmlns:local="clr-namespace:CoreView.App"
         mc:Ignorable="d"
-        Name="PopupWindow"
-        Title="CPU Temperature Monitor" 
-        Height="450" Width="400"
-        WindowStyle="None" 
-        ResizeMode="NoResize"
-        ShowInTaskbar="False"
-        Topmost="True"
-        Background="#F5F5F5"
-        BorderBrush="DarkGray"
-        BorderThickness="1">
+        Title="CPU Temperature Monitor">
     
     <Grid>
         <Grid.RowDefinitions>
@@ -130,4 +120,4 @@
                    Fill="Transparent"
                    MouseDown="Window_MouseDown"/>
     </Grid>
-</Window>
+</views:BaseMetricWindow>

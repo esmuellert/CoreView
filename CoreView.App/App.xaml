@@ -1,13 +1,12 @@
 ﻿<Application x:Class="CoreView.App.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:CoreView.App"
              Startup="Application_Startup"
              Exit="Application_Exit">
     <Application.Resources>
          <ResourceDictionary>
              <ResourceDictionary.MergedDictionaries>
-                 <!-- Add any application-wide resource dictionaries here -->
+                 <!-- Add any application-wide resources here -->
              </ResourceDictionary.MergedDictionaries>
          </ResourceDictionary>
     </Application.Resources>

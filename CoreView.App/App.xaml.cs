@@ -1,46 +1,36 @@
 ﻿using System.Windows;
+using System.Windows.Forms;
 using CoreView.App.Services;
-using CoreView.App.ViewModels;
 using CoreView.Core.Temperature;
+using Application = System.Windows.Application;
 
 namespace CoreView.App;
 
 /// <summary>
 /// Interaction logic for App.xaml
 /// </summary>
-public partial class App : System.Windows.Application
+public partial class App : Application
 {
-    private TrayIconService? _trayIconService;
     private TemperatureService? _temperatureService;
-    private TemperatureViewModel? _temperatureViewModel;
+    private TemperatureTrayIconService? _temperatureTrayService;
+    // Add more services here as needed, for example:
+    // private CpuUsageService? _cpuUsageService;
+    // private CpuTrayIconService? _cpuTrayService;
 
     private void Application_Startup(object sender, StartupEventArgs e)
     {
         // Initialize services
         _temperatureService = new TemperatureService();
-        _temperatureViewModel = new TemperatureViewModel(_temperatureService);
-        _trayIconService = new TrayIconService(_temperatureService);
+        _temperatureTrayService = new TemperatureTrayIconService(_temperatureService);
 
-        // Create and hide the main window
-        var mainWindow = new MainWindow
-        {
-            DataContext = _temperatureViewModel,
-            WindowStartupLocation = WindowStartupLocation.CenterScreen
-        };
-
-        // Store the main window in our application resources for access elsewhere
-        Resources["MainWindow"] = mainWindow;
-
-        // Don't show the main window at startup - we'll use the tray icon
-        // instead, but keep the application running
+        // Don't show any window at startup - we'll use tray icons instead
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
     }
 
     private void Application_Exit(object sender, ExitEventArgs e)
     {
         // Clean up resources
-        _trayIconService?.Dispose();
-        _temperatureViewModel?.Dispose();
+        _temperatureTrayService?.Dispose();
         _temperatureService?.Dispose();
     }
 }

@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using CoreView.Core.Interfaces;
 using CoreView.Core.Models;
 using LiveChartsCore;
@@ -14,17 +13,13 @@ namespace CoreView.App.ViewModels;
 /// <summary>
 /// ViewModel for CPU temperature monitoring
 /// </summary>
-public partial class TemperatureViewModel : ObservableObject, IDisposable
+public partial class TemperatureViewModel : BaseMetricViewModel
 {
     private readonly ITemperatureService _temperatureService;
     private readonly System.Threading.Timer _updateTimer;
-    private bool _disposed;
 
     [ObservableProperty]
     private float _currentTemperature;
-
-    [ObservableProperty]
-    private DateTime _lastUpdated;
 
     [ObservableProperty]
     private ObservableCollection<ProcessInfo> _topProcesses = new();
@@ -104,7 +99,7 @@ public partial class TemperatureViewModel : ObservableObject, IDisposable
     private void UpdateTemperature(float temperature)
     {
         CurrentTemperature = temperature;
-        LastUpdated = DateTime.Now;
+        UpdateLastUpdated();
     }
 
     /// <summary>
@@ -173,26 +168,18 @@ public partial class TemperatureViewModel : ObservableObject, IDisposable
         }
     }
 
-    [RelayCommand]
-    private void RefreshData()
+    protected override void RefreshData()
     {
         UpdateProcessList();
         UpdateTemperatureChart();
     }
 
-    public void Dispose()
+    public override void Dispose()
     {
         if (_disposed) return;
         
-        _disposed = true;
+        base.Dispose();
         _temperatureService.TemperatureChanged -= OnTemperatureChanged;
         _updateTimer?.Dispose();
-        
-        GC.SuppressFinalize(this);
-    }
-
-    ~TemperatureViewModel()
-    {
-        Dispose();
     }
 }
