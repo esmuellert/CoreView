@@ -1,4 +1,3 @@
-using System.Drawing;
 using SkiaSharp;
 
 namespace CoreView.App.Icons;

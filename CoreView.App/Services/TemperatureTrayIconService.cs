@@ -12,7 +12,7 @@ public class TemperatureTrayIconService : BaseTrayIconService
 {
     private readonly ITemperatureService _temperatureService;
 
-    public TemperatureTrayIconService(ITemperatureService temperatureService) 
+    public TemperatureTrayIconService(ITemperatureService temperatureService)
         : base("Temperature", TemperatureIconGenerator.CreateTrayIcon("--°"))
     {
         _temperatureService = temperatureService;

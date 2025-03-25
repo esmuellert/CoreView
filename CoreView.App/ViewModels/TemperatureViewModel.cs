@@ -36,7 +36,7 @@ public partial class TemperatureViewModel : BaseMetricViewModel
     public TemperatureViewModel(ITemperatureService temperatureService)
     {
         _temperatureService = temperatureService;
-        
+
         // Set up chart series
         TemperatureSeries = new ObservableCollection<ISeries>
         {
@@ -76,10 +76,10 @@ public partial class TemperatureViewModel : BaseMetricViewModel
 
         // Subscribe to temperature changes
         _temperatureService.TemperatureChanged += OnTemperatureChanged;
-        
+
         // Start timer to update process list and chart data
         _updateTimer = new System.Threading.Timer(UpdateData, null, TimeSpan.Zero, TimeSpan.FromSeconds(3));
-        
+
         // Initial update
         UpdateTemperature(_temperatureService.GetCurrentTemperature());
         UpdateProcessList();
@@ -108,7 +108,7 @@ public partial class TemperatureViewModel : BaseMetricViewModel
     private void UpdateData(object? state)
     {
         if (_disposed) return;
-        
+
         UpdateProcessList();
         UpdateTemperatureChart();
     }
@@ -121,7 +121,7 @@ public partial class TemperatureViewModel : BaseMetricViewModel
         try
         {
             var processes = _temperatureService.GetTopProcessesByCpuUsage();
-            
+
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
                 TopProcesses.Clear();
@@ -145,7 +145,7 @@ public partial class TemperatureViewModel : BaseMetricViewModel
         try
         {
             var historyData = _temperatureService.GetTemperatureHistory().ToList();
-            
+
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
                 if (TemperatureSeries[0] is LineSeries<ObservablePoint> series)
@@ -156,7 +156,7 @@ public partial class TemperatureViewModel : BaseMetricViewModel
                     {
                         points.Add(new ObservablePoint(reading.Timestamp.ToOADate(), reading.Temperature));
                     }
-                    
+
                     // Update the values
                     series.Values = points;
                 }
@@ -177,7 +177,7 @@ public partial class TemperatureViewModel : BaseMetricViewModel
     public override void Dispose()
     {
         if (_disposed) return;
-        
+
         base.Dispose();
         _temperatureService.TemperatureChanged -= OnTemperatureChanged;
         _updateTimer?.Dispose();

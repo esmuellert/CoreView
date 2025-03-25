@@ -31,7 +31,7 @@ public class TemperatureService : ITemperatureService, IDisposable
     {
         _temperatureHistory = new ConcurrentQueue<TemperatureReading>();
         _updateVisitor = new UpdateVisitor();
-        
+
         try
         {
             // Check if running with admin privileges
@@ -54,7 +54,7 @@ public class TemperatureService : ITemperatureService, IDisposable
                 IsNetworkEnabled = false,
                 IsStorageEnabled = false
             };
-            
+
             _computer.Open();
             _isInitialized = true;
         }
@@ -64,7 +64,7 @@ public class TemperatureService : ITemperatureService, IDisposable
             _lastError = ex.Message;
             _computer = new Computer(); // Create empty instance to prevent null reference
         }
-        
+
         // Start a timer to update temperature values every 2 seconds
         _updateTimer = new Timer(UpdateTemperature, null, TimeSpan.Zero, TimeSpan.FromSeconds(2));
     }
@@ -95,7 +95,7 @@ public class TemperatureService : ITemperatureService, IDisposable
                     {
                         foreach (var sensor in hardware.Sensors)
                         {
-                            if (sensor.SensorType == SensorType.Temperature && 
+                            if (sensor.SensorType == SensorType.Temperature &&
                                 sensor.Name.Contains("Package", StringComparison.OrdinalIgnoreCase) &&
                                 sensor.Value.HasValue)
                             {
@@ -105,7 +105,7 @@ public class TemperatureService : ITemperatureService, IDisposable
                                 break;
                             }
                         }
-                        
+
                         // If no package temperature, try individual cores
                         if (!foundAnySensors)
                         {
@@ -131,7 +131,7 @@ public class TemperatureService : ITemperatureService, IDisposable
                         {
                             foreach (var sensor in hardware.Sensors)
                             {
-                                if (sensor.SensorType == SensorType.Temperature && 
+                                if (sensor.SensorType == SensorType.Temperature &&
                                     sensor.Name.Contains("CPU", StringComparison.OrdinalIgnoreCase) &&
                                     sensor.Value.HasValue)
                                 {
@@ -149,22 +149,22 @@ public class TemperatureService : ITemperatureService, IDisposable
                 if (cpuTempSensors > 0)
                 {
                     var avgTemp = cpuTemp / cpuTempSensors;
-                    
+
                     // Update current temperature and add to history
                     if (Math.Abs(_currentTemperature - avgTemp) > 0.1f)
                     {
                         _currentTemperature = avgTemp;
                         var reading = new TemperatureReading(_currentTemperature, DateTime.Now);
                         _temperatureHistory.Enqueue(reading);
-                        
+
                         // Trim history to keep about 10 minutes of readings
                         while (_temperatureHistory.Count > 300)
                         {
                             _temperatureHistory.TryDequeue(out _);
                         }
-                        
+
                         // Notify subscribers about temperature change
-                        TemperatureChanged?.Invoke(this, 
+                        TemperatureChanged?.Invoke(this,
                             new TemperatureChangedEventArgs(_currentTemperature, DateTime.Now));
                     }
                 }
@@ -208,14 +208,14 @@ public class TemperatureService : ITemperatureService, IDisposable
     {
         var processes = Process.GetProcesses();
         var result = new List<ProcessInfo>();
-        
+
         foreach (var process in processes)
         {
             try
             {
                 var cpuUsage = 0f; // This is a placeholder; proper CPU usage would require sampling 
                 var memoryMB = process.WorkingSet64 / 1024f / 1024f;
-                
+
                 result.Add(new ProcessInfo(
                     process.Id,
                     process.ProcessName,
@@ -228,7 +228,7 @@ public class TemperatureService : ITemperatureService, IDisposable
                 // Skip processes that can't be accessed
             }
         }
-        
+
         // For accurate CPU measurement, we would need to implement a more complex solution
         // with process time sampling, but for demo purposes, we'll just sort by memory usage
         return result
@@ -240,16 +240,16 @@ public class TemperatureService : ITemperatureService, IDisposable
     public void Dispose()
     {
         if (_disposed) return;
-        
+
         lock (_lockObject)
         {
             if (_disposed) return;
             _disposed = true;
-            
+
             _updateTimer?.Dispose();
             _computer?.Close();
         }
-        
+
         GC.SuppressFinalize(this);
     }
 

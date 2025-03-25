@@ -1,5 +1,3 @@
-using System.Windows;
-using System.Windows.Forms;
 using CoreView.App.Views;
 using Application = System.Windows.Application;
 

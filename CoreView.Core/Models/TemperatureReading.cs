@@ -9,7 +9,7 @@ public class TemperatureReading
     /// The temperature value in degrees Celsius
     /// </summary>
     public float Temperature { get; }
-    
+
     /// <summary>
     /// The timestamp when the temperature was recorded
     /// </summary>

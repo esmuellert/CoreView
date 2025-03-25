@@ -9,17 +9,17 @@ public class ProcessInfo
     /// The process ID
     /// </summary>
     public int Id { get; }
-    
+
     /// <summary>
     /// The name of the process
     /// </summary>
     public string Name { get; }
-    
+
     /// <summary>
     /// CPU usage as a percentage (0-100)
     /// </summary>
     public float CpuUsage { get; }
-    
+
     /// <summary>
     /// Memory usage in MB
     /// </summary>

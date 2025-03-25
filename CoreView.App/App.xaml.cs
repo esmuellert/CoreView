@@ -1,5 +1,4 @@
 ﻿using System.Windows;
-using System.Windows.Forms;
 using CoreView.App.Services;
 using CoreView.Core.Temperature;
 using Application = System.Windows.Application;

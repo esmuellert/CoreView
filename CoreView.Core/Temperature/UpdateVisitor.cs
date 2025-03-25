@@ -33,12 +33,12 @@ public class UpdateVisitor : IVisitor
         }
     }
 
-    public void VisitSensor(ISensor sensor) 
+    public void VisitSensor(ISensor sensor)
     {
         // No action needed for individual sensors
     }
 
-    public void VisitParameter(IParameter parameter) 
+    public void VisitParameter(IParameter parameter)
     {
         // No action needed for parameters
     }
